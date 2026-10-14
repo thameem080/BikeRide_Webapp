@@ -1,0 +1,25 @@
+{
+  "name": "velo-ai-platform",
+  "version": "1.0.0",
+  "description": "VELO AI — AI-Powered Voice-First Bike Taxi Booking Platform",
+  "scripts": {
+    "dev:server": "cd server && node src/index.js",
+    "dev:client": "cd client && npm run dev",
+    "build:client": "cd client && npm run build",
+    "test:server": "node server/test/api.test.js"
+  },
+  "keywords": [
+    "bike-taxi",
+    "voice-booking",
+    "ai",
+    "speech-recognition",
+    "rapido-alternative",
+    "ola-alternative",
+    "supabase",
+    "react",
+    "leaflet",
+    "tailwind"
+  ],
+  "author": "VELO AI Engineering",
+  "license": "MIT"
+}

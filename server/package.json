@@ -1,0 +1,22 @@
+{
+  "name": "velo-ai-server",
+  "version": "1.0.0",
+  "description": "Backend API for VELO AI Bike Taxi Booking Platform",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.48.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "openai": "^4.85.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
