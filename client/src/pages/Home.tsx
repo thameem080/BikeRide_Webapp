@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Map } from '../components/Map';
 import { VoiceAssistant } from '../components/VoiceAssistant';
-import { FareCard } from '../components/FareCard';
+import { FareCard, RideTier } from '../components/FareCard';
 import { api } from '../services/api';
 import { LocationPoint, FareBreakdown, Driver, AiVoiceResponse } from '../types';
 import {
@@ -16,7 +16,17 @@ import {
   CheckCircle,
   X,
   Compass,
-  Zap
+  Zap,
+  ArrowUpDown,
+  Clock,
+  Home as HomeIcon,
+  Briefcase,
+  Plane,
+  Building,
+  Mic,
+  Calendar,
+  Layers,
+  Award
 } from 'lucide-react';
 
 interface HomeProps {
@@ -24,7 +34,12 @@ interface HomeProps {
 }
 
 export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
-  const { user, language, setLanguage } = useAuth();
+  const { user, language } = useAuth();
+
+  // Ride Mode Tab
+  const [activeTab, setActiveTab] = useState<'ride' | 'package'>('ride');
+  const [rideSchedule, setRideSchedule] = useState<'now' | 'reserve'>('now');
+  const [voiceDrawerOpen, setVoiceDrawerOpen] = useState(false);
 
   // Location state
   const [pickup, setPickup] = useState<LocationPoint>({
@@ -121,7 +136,6 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       },
       (err) => {
         console.warn('Geolocation error:', err);
-        // Fallback to Chennai Central
         setPickup({
           id: 'loc-01',
           name: 'Chennai Central Railway Station',
@@ -133,13 +147,24 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
     );
   };
 
-  // Quick chips
-  const quickDestinations = [
-    { label: 'Marina Beach', query: 'Marina Beach Light House' },
-    { label: 'T. Nagar', query: 'T. Nagar Pondy Bazaar' },
-    { label: 'Velachery Mall', query: 'Phoenix Mall Velachery' },
-    { label: 'Airport', query: 'Chennai International Airport' },
-    { label: 'Guindy', query: 'Guindy Kathipara' }
+  // Swap pickup & dropoff
+  const handleSwapLocations = () => {
+    if (!destination) return;
+    const tempPickup = pickup;
+    const tempPickupQuery = pickupQuery;
+    setPickup(destination);
+    setPickupQuery(destQuery);
+    setDestination(tempPickup);
+    setDestQuery(tempPickupQuery);
+  };
+
+  // Quick destinations (Uber Saved Places)
+  const savedPlaces = [
+    { label: 'Marina Beach', query: 'Marina Beach Light House', icon: Compass },
+    { label: 'T. Nagar', query: 'T. Nagar Pondy Bazaar', icon: Building },
+    { label: 'Airport', query: 'Chennai International Airport', icon: Plane },
+    { label: 'Velachery', query: 'Phoenix Mall Velachery', icon: Building },
+    { label: 'Guindy', query: 'Guindy Kathipara', icon: Building }
   ];
 
   const handleSelectQuickDest = async (item: { label: string; query: string }) => {
@@ -152,7 +177,6 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
   // AI Voice Assistant callback
   const handleAiAction = (aiResult: AiVoiceResponse) => {
-    // If AI identified destination
     if (aiResult.destinationCoords) {
       setDestination(aiResult.destinationCoords);
       setDestQuery(aiResult.destinationCoords.name);
@@ -163,23 +187,21 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
       });
     }
 
-    // If AI updated fare
     if (aiResult.calculatedFare) {
       setFareBreakdown(aiResult.calculatedFare);
       if (aiResult.distanceKm) setDistanceKm(aiResult.distanceKm);
       if (aiResult.durationMins) setDurationMins(aiResult.durationMins);
     }
 
-    // If AI confirmed booking!
     if (aiResult.isConfirmed && aiResult.action === 'create_booking') {
-      handleConfirmBooking();
+      handleConfirmBooking('UPI');
     }
   };
 
   // Create real booking
-  const handleConfirmBooking = async (paymentMethod = 'UPI') => {
+  const handleConfirmBooking = async (paymentMethod = 'UPI', selectedTier: RideTier = 'moto') => {
     if (!pickup || !destination) {
-      alert('Please specify both pickup and destination locations');
+      alert('Please select both pickup and destination locations');
       return;
     }
 
@@ -205,186 +227,252 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 space-y-5">
-      {/* Top Banner / Hero Feature Announcement */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-forest-900/90 via-forest-850 to-forest-900/90 border border-velo-border/50 p-4 shadow-xl">
+      {/* Top Uber Announcement Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-3xl bg-[#0e121a]/95 border border-white/10 p-4 shadow-xl text-slate-100">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-velo-lime/20 border border-velo-lime/40 text-velo-lime">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black border border-velo-lime/40 text-velo-lime shadow-md shadow-velo-lime/20">
             <Zap className="h-6 w-6" />
           </div>
           <div>
             <h1 className="text-base font-extrabold text-white flex items-center gap-2">
-              VELO AI Voice-First Bike Taxi
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-velo-lime/10 text-velo-lime border border-velo-lime/30">
-                Chennai Central Hub
+              Uber Moto &bull; Beat The Traffic
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                FASTER &bull; CHEAPER
               </span>
             </h1>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-slate-400">
               {language === 'ta'
-                ? 'மைக் பட்டனை அழுத்தி எங்கு செல்ல வேண்டும் என்று சொல்லுங்கள். உடனே பைக் வந்துவிடும்!'
-                : 'Say "Book a bike to Central" or type below. Instant dispatch, zero wait.'}
+                ? 'சென்னையின் அதிவேக பைக் டாக்ஸி. குரல் மூலமாகவும் புக் செய்யலாம்.'
+                : 'Hop on, breeze through Chennai streets. AI Voice booking & live GPS tracking enabled.'}
             </p>
           </div>
         </div>
 
-        {/* Demo Mode Badge */}
-        <div className="flex items-center gap-2 self-start sm:self-auto rounded-xl bg-forest-950/80 px-3 py-1.5 border border-velo-border/30 text-xs">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span className="text-slate-300 font-mono text-[11px]">
-            {nearbyDrivers.length} Captains Online Nearby
-          </span>
+        {/* Live Captains Badge & Voice Dispatcher Trigger */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setVoiceDrawerOpen(!voiceDrawerOpen)}
+            className={`flex items-center gap-1.5 rounded-2xl px-3 py-1.5 text-xs font-bold transition-all ${
+              voiceDrawerOpen
+                ? 'bg-velo-lime text-black shadow-lg shadow-velo-lime/30'
+                : 'bg-white/5 text-slate-200 border border-white/10 hover:bg-white/10'
+            }`}
+          >
+            <Mic className="h-3.5 w-3.5 text-velo-lime group-hover:text-black" />
+            <span>AI Voice Dispatch</span>
+          </button>
+
+          <div className="flex items-center gap-2 rounded-2xl bg-black/60 px-3 py-1.5 border border-white/10 text-xs">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-slate-300 font-mono text-[11px]">
+              {nearbyDrivers.length} Captains Nearby
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Controls / Voice / Fare & Right Interactive Map */}
+      {/* Main Content Grid: Left Controls (5 cols) & Right Map (7 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left Column (Inputs, Voice, Fare): 5 Columns on Desktop */}
+        {/* Left Column (Inputs, Voice, Ride Selector) */}
         <div className="lg:col-span-5 space-y-4">
-          {/* Location Selection Card */}
-          <div className="rounded-3xl border border-velo-border/60 bg-forest-900/90 p-5 shadow-2xl backdrop-blur-2xl">
-            <h2 className="text-sm font-bold text-white mb-3 flex items-center justify-between">
-              <span>{language === 'ta' ? 'பயண வழியைத் தேர்வு செய்யவும்' : 'Where are you riding?'}</span>
-              <button
-                onClick={handleGetCurrentLocation}
-                className="flex items-center gap-1 text-[11px] font-semibold text-velo-lime hover:underline"
-              >
-                <Crosshair className="h-3 w-3" />
-                {language === 'ta' ? 'என் இருப்பிடம்' : 'GPS Detect'}
-              </button>
-            </h2>
-
-            {/* Pickup Input */}
-            <div className="relative mb-3">
-              <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1 block">
-                {language === 'ta' ? 'புறப்படும் இடம் (Pickup)' : 'Pickup Location'}
-              </label>
-              <div className="relative flex items-center">
-                <MapPin className="absolute left-3.5 h-4 w-4 text-velo-lime" />
-                <input
-                  type="text"
-                  value={pickupQuery}
-                  onFocus={() => setIsSearchingPickup(true)}
-                  onChange={(e) => {
-                    setPickupQuery(e.target.value);
-                    setIsSearchingPickup(true);
-                  }}
-                  placeholder="Enter pickup point..."
-                  className="w-full rounded-2xl border border-velo-border/60 bg-forest-950/80 py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:border-velo-lime focus:outline-none"
-                />
+          {/* Uber "Where to?" Card */}
+          <div className="rounded-3xl border border-white/10 bg-[#0e121a]/95 p-5 shadow-2xl backdrop-blur-2xl text-slate-100">
+            {/* Top Tabs: Ride vs Package */}
+            <div className="flex items-center justify-between pb-3.5 border-b border-white/10 mb-4">
+              <div className="flex items-center gap-1 rounded-2xl bg-black/60 p-1 border border-white/10">
+                <button
+                  onClick={() => setActiveTab('ride')}
+                  className={`rounded-xl px-4 py-1.5 text-xs font-bold transition-all ${
+                    activeTab === 'ride'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Ride
+                </button>
+                <button
+                  onClick={() => setActiveTab('package')}
+                  className={`rounded-xl px-4 py-1.5 text-xs font-bold transition-all ${
+                    activeTab === 'package'
+                      ? 'bg-white text-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Package
+                </button>
               </div>
 
-              {/* Pickup Suggestions dropdown */}
-              {isSearchingPickup && pickupSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-2xl border border-velo-border bg-forest-900 p-1.5 shadow-2xl">
-                  {pickupSuggestions.map((s) => (
-                    <button
-                      key={s.id || s.name}
-                      onClick={() => {
-                        setPickup(s);
-                        setPickupQuery(s.name);
-                        setIsSearchingPickup(false);
-                      }}
-                      className="flex w-full items-start gap-2 rounded-xl p-2 text-left text-xs text-slate-200 hover:bg-forest-800"
-                    >
-                      <MapPin className="h-3.5 w-3.5 text-velo-lime mt-0.5 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-white">{s.shortName || s.name}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{s.name}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Schedule Pill */}
+              <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+                <Clock className="h-3.5 w-3.5 text-velo-lime" />
+                <span>Ride now</span>
+              </div>
             </div>
 
-            {/* Destination Input */}
-            <div className="relative">
-              <label className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1 block">
-                {language === 'ta' ? 'இலக்கு (Destination)' : 'Drop Destination'}
-              </label>
-              <div className="relative flex items-center">
-                <Navigation className="absolute left-3.5 h-4 w-4 text-rose-400" />
-                <input
-                  type="text"
-                  value={destQuery}
-                  onFocus={() => setIsSearchingDest(true)}
-                  onChange={(e) => {
-                    setDestQuery(e.target.value);
-                    setIsSearchingDest(true);
-                  }}
-                  placeholder={
-                    language === 'ta'
-                      ? 'எங்கு செல்ல வேண்டும்? (உதா: மெரினா கடற்கரை)'
-                      : 'Where to? (e.g. Marina Beach, Egmore)'
-                  }
-                  className="w-full rounded-2xl border border-velo-border/60 bg-forest-950/80 py-2.5 pl-10 pr-8 text-xs text-white placeholder-slate-500 focus:border-velo-lime focus:outline-none"
-                />
-                {destination && (
-                  <button
-                    onClick={() => {
-                      setDestination(null);
-                      setDestQuery('');
+            {/* Uber Connecting Route Inputs */}
+            <div className="relative space-y-3">
+              {/* Connecting Visual Track Line */}
+              <div className="absolute left-[21px] top-[26px] bottom-[26px] w-[2px] bg-white/20 z-0"></div>
+
+              {/* Pickup Input */}
+              <div className="relative z-10 flex items-center">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+                  <div className="h-3.5 w-3.5 rounded-full border-2 border-velo-lime bg-black shadow-sm shadow-velo-lime/50"></div>
+                </div>
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={pickupQuery}
+                    onFocus={() => setIsSearchingPickup(true)}
+                    onChange={(e) => {
+                      setPickupQuery(e.target.value);
+                      setIsSearchingPickup(true);
                     }}
-                    className="absolute right-2.5 text-slate-400 hover:text-white"
+                    placeholder="Enter pickup point..."
+                    className="w-full rounded-2xl border border-white/10 bg-black/70 py-3 pl-3.5 pr-20 text-xs font-semibold text-white placeholder-slate-500 focus:border-velo-lime focus:outline-none transition-colors"
+                  />
+                  <button
+                    onClick={handleGetCurrentLocation}
+                    title="Detect Current GPS Location"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-xl bg-white/10 px-2 py-1 text-[10px] font-mono font-bold text-velo-lime hover:bg-white/20 transition-all"
                   >
-                    <X className="h-4 w-4" />
+                    <Crosshair className="h-3 w-3" />
+                    <span>GPS</span>
                   </button>
+                </div>
+
+                {/* Pickup Autocomplete Suggestions */}
+                {isSearchingPickup && pickupSuggestions.length > 0 && (
+                  <div className="absolute left-11 right-0 top-full mt-1.5 z-40 rounded-2xl border border-white/15 bg-[#141924] p-1.5 shadow-2xl">
+                    {pickupSuggestions.map((s) => (
+                      <button
+                        key={s.id || s.name}
+                        onClick={() => {
+                          setPickup(s);
+                          setPickupQuery(s.name);
+                          setIsSearchingPickup(false);
+                        }}
+                        className="flex w-full items-start gap-2.5 rounded-xl p-2.5 text-left text-xs text-slate-200 hover:bg-white/10 transition-colors"
+                      >
+                        <MapPin className="h-4 w-4 text-velo-lime mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-bold text-white">{s.shortName || s.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{s.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
 
-              {/* Destination Suggestions dropdown */}
-              {isSearchingDest && destSuggestions.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-30 rounded-2xl border border-velo-border bg-forest-900 p-1.5 shadow-2xl max-h-56 overflow-y-auto">
-                  {destSuggestions.map((s) => (
-                    <button
-                      key={s.id || s.name}
-                      onClick={() => {
-                        setDestination(s);
-                        setDestQuery(s.name);
-                        setIsSearchingDest(false);
-                      }}
-                      className="flex w-full items-start gap-2 rounded-xl p-2 text-left text-xs text-slate-200 hover:bg-forest-800"
-                    >
-                      <Navigation className="h-3.5 w-3.5 text-rose-400 mt-0.5 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-white">{s.shortName || s.name}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{s.name}</p>
-                      </div>
-                    </button>
-                  ))}
+              {/* Destination Input */}
+              <div className="relative z-10 flex items-center">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center">
+                  <div className="h-3.5 w-3.5 rounded-[3px] bg-rose-500 shadow-sm shadow-rose-500/50"></div>
                 </div>
-              )}
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    value={destQuery}
+                    onFocus={() => setIsSearchingDest(true)}
+                    onChange={(e) => {
+                      setDestQuery(e.target.value);
+                      setIsSearchingDest(true);
+                    }}
+                    placeholder={
+                      language === 'ta'
+                        ? 'எங்கு செல்ல வேண்டும்? (உதா: மெரினா கடற்கரை)'
+                        : 'Where to? (e.g. Marina Beach, Airport, T. Nagar)'
+                    }
+                    className="w-full rounded-2xl border border-white/10 bg-black/70 py-3 pl-3.5 pr-16 text-xs font-semibold text-white placeholder-slate-500 focus:border-rose-400 focus:outline-none transition-colors"
+                  />
+                  {destination && (
+                    <button
+                      onClick={() => {
+                        setDestination(null);
+                        setDestQuery('');
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Swap button */}
+                <button
+                  onClick={handleSwapLocations}
+                  title="Swap Pickup and Dropoff"
+                  className="ml-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </button>
+
+                {/* Destination Autocomplete Suggestions */}
+                {isSearchingDest && destSuggestions.length > 0 && (
+                  <div className="absolute left-11 right-0 top-full mt-1.5 z-40 rounded-2xl border border-white/15 bg-[#141924] p-1.5 shadow-2xl max-h-56 overflow-y-auto">
+                    {destSuggestions.map((s) => (
+                      <button
+                        key={s.id || s.name}
+                        onClick={() => {
+                          setDestination(s);
+                          setDestQuery(s.name);
+                          setIsSearchingDest(false);
+                        }}
+                        className="flex w-full items-start gap-2.5 rounded-xl p-2.5 text-left text-xs text-slate-200 hover:bg-white/10 transition-colors"
+                      >
+                        <Navigation className="h-4 w-4 text-rose-400 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="font-bold text-white">{s.shortName || s.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">{s.name}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Quick Destination Chips */}
-            <div className="mt-3 flex items-center gap-1.5 overflow-x-auto pb-1">
-              <span className="text-[10px] text-slate-400 font-mono shrink-0">Popular:</span>
-              {quickDestinations.map((q, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSelectQuickDest(q)}
-                  className="shrink-0 rounded-xl border border-velo-border/40 bg-forest-950/60 px-2 py-1 text-[11px] text-slate-300 hover:border-velo-lime hover:text-white transition-all"
-                >
-                  {q.label}
-                </button>
-              ))}
+            {/* Uber Saved Places Quick Chips */}
+            <div className="mt-4 pt-3 border-t border-white/10">
+              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2">
+                Popular Destinations
+              </p>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {savedPlaces.map((q, idx) => {
+                  const SIcon = q.icon;
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => handleSelectQuickDest(q)}
+                      className="flex items-center gap-1.5 shrink-0 rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-300 hover:border-velo-lime hover:bg-white/10 hover:text-white transition-all"
+                    >
+                      <SIcon className="h-3.5 w-3.5 text-velo-lime" />
+                      <span>{q.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* AI Voice Assistant */}
-          <VoiceAssistant
-            language={language}
-            pickup={pickup}
-            destination={destination}
-            fareBreakdown={fareBreakdown}
-            onAiAction={handleAiAction}
-            onClearRoute={() => {
-              setDestination(null);
-              setDestQuery('');
-            }}
-          />
+          {/* AI Voice Assistant Drawer/Widget */}
+          {voiceDrawerOpen && (
+            <VoiceAssistant
+              language={language}
+              pickup={pickup}
+              destination={destination}
+              fareBreakdown={fareBreakdown}
+              onAiAction={handleAiAction}
+              onClearRoute={() => {
+                setDestination(null);
+                setDestQuery('');
+              }}
+            />
+          )}
 
-          {/* Fare Estimate Card (if route defined) */}
-          {fareBreakdown && (
+          {/* Uber Ride Options Card (FareCard) */}
+          {fareBreakdown ? (
             <FareCard
               fareBreakdown={fareBreakdown}
               distanceKm={distanceKm}
@@ -393,11 +481,22 @@ export const Home: React.FC<HomeProps> = ({ onNavigate }) => {
               onBookRide={handleConfirmBooking}
               isLoading={isBooking}
             />
+          ) : (
+            /* Empty State Guide Card */
+            <div className="rounded-3xl border border-white/10 bg-[#0e121a]/60 p-5 text-center text-slate-400 space-y-2">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 border border-white/10 text-velo-lime">
+                <Navigation className="h-6 w-6" />
+              </div>
+              <h3 className="text-sm font-bold text-white">Select a Drop Destination</h3>
+              <p className="text-xs text-slate-400 max-w-xs mx-auto">
+                Type an address above or choose from popular places to view live fare estimates, ETA, and ride options.
+              </p>
+            </div>
           )}
         </div>
 
-        {/* Right Column: Interactive Leaflet Map (7 Columns on Desktop) */}
-        <div className="lg:col-span-7 h-[540px] sm:h-[640px] lg:h-[760px] sticky top-20">
+        {/* Right Column: Full Interactive Map */}
+        <div className="lg:col-span-7 h-[560px] sm:h-[650px] lg:h-[780px] sticky top-20">
           <Map
             pickup={pickup}
             destination={destination}

@@ -51,7 +51,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-forest-950 text-slate-100 flex flex-col font-sans selection:bg-velo-lime selection:text-forest-950">
+    <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col font-sans selection:bg-velo-lime selection:text-black">
       {/* Top Navbar */}
       <Navbar
         currentPath={currentPath}
@@ -72,23 +72,23 @@ function AppContent() {
       />
 
       {/* Footer */}
-      <footer className="border-t border-velo-border/30 bg-forest-950 py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-white/10 bg-[#06080c] py-6 text-center text-xs text-slate-500">
         <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-mono text-[11px]">
-            &copy; 2026 VELO AI Technologies &bull; Powered by DeepMind &bull; Chennai Cluster
+          <p className="font-mono text-[11px] text-slate-400">
+            &copy; 2026 Uber Moto Platform &bull; Real-time GPS & Google Maps Engine &bull; Chennai Cluster
           </p>
           <div className="flex items-center gap-4 text-[11px]">
-            <button onClick={() => navigate('/login')} className="hover:text-velo-lime">
+            <button onClick={() => navigate('/login')} className="hover:text-velo-lime transition-colors">
               Switch Persona
             </button>
             <span>&bull;</span>
-            <button onClick={() => setSosModalOpen(true)} className="text-rose-400 hover:text-rose-300">
-              Safety Support
+            <button onClick={() => setSosModalOpen(true)} className="text-rose-400 hover:text-rose-300 transition-colors">
+              Safety Support & SOS
             </button>
             <span>&bull;</span>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-slate-300">
-              Documentation
-            </a>
+            <button onClick={() => navigate('/bookings')} className="hover:text-slate-300 transition-colors">
+              Ride Receipts
+            </button>
           </div>
         </div>
       </footer>
